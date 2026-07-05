@@ -23,24 +23,30 @@ machine.
 ## Usage
 
 ```sh
-# Format a file based on its extension (html / css / js / json)
+# Format a file in-place — language auto-detected from extension
+formatter-cli src/**/*.js -w
+
+# Format multiple file types
+formatter-cli src/**/*.css src/**/*.html -w
+
+# Print formatted output to stdout
 formatter-cli index.html
 
 # Force a language, choose indent width
 formatter-cli -l json -i 2 package.json
 
-# Read from stdin
+# Read from stdin (language required)
 curl -s https://example.com/style.css | formatter-cli -l css
 
-# Format in-place
-formatter-cli -l js -o script.js script.js
+# CI check — exit non-zero if any file is not well-formatted
+formatter-cli --check src/
 
-# CI check – exit 1 if the input is not already well-formed
-formatter-cli --check -l html template.html
-
-# With parse-error details
-DEBUG=1 formatter-cli -l js broken.js
+# Check then reformat in-place
+formatter-cli --check -w src/
 ```
+
+Language is auto-detected from the file extension. Supported extensions:
+`.css` `.html` `.htm` `.js` `.mjs` `.cjs` `.ts` `.json`.
 
 ### Options
 
@@ -64,7 +70,7 @@ Node-only compatibility shims layered on top:
 formatter-cli/
 ├── bin/formatter-cli.js            # shebang wrapper (ESM `import(...)`)
 ├── src/
-│   ├── index.ts                 # CLI arg reader, stdin/stdout I/O
+│   ├── index.ts                 # CLI arg reader (commander), stdin/stdout I/O
 │   ├── platform/
 │   │   ├── ArrayUtilities.ts    # lowerBound + DEFAULT_COMPARATOR
 │   │   └── StringUtilities.ts   # findLineEndingIndexes, isWhitespace
@@ -90,6 +96,9 @@ formatter-cli/
 
 ### Dependencies
 
+- [`commander`](https://www.npmjs.com/package/commander) — CLI argument parsing
+- [`glob`](https://www.npmjs.com/package/glob) — file glob expansion for patterns
+  like `src/**/*.js`
 - [`codemirror@^5.65.16`](https://www.npmjs.com/package/codemirror) — only the
   CommonJS CSS / XML / JavaScript / HTML-mixed **mode packages** plus the
   editor-core UMD IIFE for the `CodeMirror` global holder (`getMode`,
@@ -99,8 +108,8 @@ formatter-cli/
 - [`acorn@^8.11.3`](https://www.npmjs.com/package/acorn) — the JS/ES parser
   consumed by `JavaScriptFormatter`.
 
-DevTools-only types (`@types/estree`, `@types/codemirror`, `@types/acorn`,
-`@types/node`) are installed as devDependencies.
+`@types/acorn`, `@types/codemirror`, `@types/node` are installed as
+devDependencies.
 
 ### How it works — CodeMirror in Node
 
