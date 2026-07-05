@@ -1,0 +1,105 @@
+// Ported from DevTools entrypoints/formatter_worker/CSSFormatter.ts
+// Original: Copyright 2013 The Chromium Authors. BSD-style license.
+
+import {lowerBound, DEFAULT_COMPARATOR} from '../platform/ArrayUtilities.js';
+import type {FormattedContentBuilder} from './FormattedContentBuilder.js';
+import {createTokenizer} from './FormatterWorker.js';
+
+const cssTrimEnd = (tokenValue: string): string => {
+  // https://drafts.csswg.org/css-syntax/#whitespace
+  const re = /(?:\r?\n|[\t\f\r ])+$/g;
+  return tokenValue.replace(re, '');
+};
+
+export class CSSFormatter {
+  readonly #builder: FormattedContentBuilder;
+  #toOffset!: number;
+  #fromOffset!: number;
+  #lineEndings!: number[];
+  #lastLine = -1;
+  #state: {
+    eatWhitespace?: boolean,
+    seenProperty?: boolean,
+    inPropertyValue?: boolean,
+    afterClosingBrace?: boolean,
+  } = {};
+  constructor(builder: FormattedContentBuilder) {
+    this.#builder = builder;
+  }
+
+  format(text: string, lineEndings: number[], fromOffset: number, toOffset: number): void {
+    this.#lineEndings = lineEndings;
+    this.#fromOffset = fromOffset;
+    this.#toOffset = toOffset;
+    this.#state = {};
+    this.#lastLine = -1;
+    const tokenize = createTokenizer('text/css');
+    const oldEnforce = this.#builder.setEnforceSpaceBetweenWords(false);
+    tokenize(text.substring(this.#fromOffset, this.#toOffset), this.#tokenCallback.bind(this));
+    this.#builder.setEnforceSpaceBetweenWords(oldEnforce);
+  }
+
+  #tokenCallback(token: string, type: string | null, startPosition: number): void {
+    startPosition += this.#fromOffset;
+    const startLine = lowerBound(this.#lineEndings, startPosition, DEFAULT_COMPARATOR);
+    if (startLine !== this.#lastLine) {
+      this.#state.eatWhitespace = true;
+    }
+    if ((type && (/^property/.test(type) || /^variable-2/.test(type))) && !this.#state.inPropertyValue) {
+      this.#state.seenProperty = true;
+    }
+    this.#lastLine = startLine;
+    // https://drafts.csswg.org/css-syntax/#whitespace
+    const isWhitespace = /^(?:\r?\n|[\t\f\r ])+$/.test(token);
+    if (isWhitespace) {
+      if (!this.#state.eatWhitespace) {
+        this.#builder.addSoftSpace();
+      }
+      return;
+    }
+    this.#state.eatWhitespace = false;
+    if (token === '\n') {
+      return;
+    }
+
+    if (token !== '}') {
+      if (this.#state.afterClosingBrace) {
+        this.#builder.addNewLine(true);
+      }
+      this.#state.afterClosingBrace = false;
+    }
+    if (token === '}') {
+      if (this.#state.inPropertyValue) {
+        this.#builder.addNewLine();
+      }
+      this.#builder.decreaseNestingLevel();
+      this.#state.afterClosingBrace = true;
+      this.#state.inPropertyValue = false;
+    } else if (token === ':' && !this.#state.inPropertyValue && this.#state.seenProperty) {
+      this.#builder.addToken(token, startPosition);
+      this.#builder.addSoftSpace();
+      this.#state.eatWhitespace = true;
+      this.#state.inPropertyValue = true;
+      this.#state.seenProperty = false;
+      return;
+    } else if (token === '{') {
+      this.#builder.addSoftSpace();
+      this.#builder.addToken(token, startPosition);
+      this.#builder.addNewLine();
+      this.#builder.increaseNestingLevel();
+      return;
+    }
+
+    this.#builder.addToken(cssTrimEnd(token), startPosition);
+
+    if (type === 'comment' && !this.#state.inPropertyValue && !this.#state.seenProperty) {
+      this.#builder.addNewLine();
+    }
+    if (token === ';' && this.#state.inPropertyValue) {
+      this.#state.inPropertyValue = false;
+      this.#builder.addNewLine();
+    } else if (token === '}') {
+      this.#builder.addNewLine();
+    }
+  }
+}

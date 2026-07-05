@@ -1,0 +1,40 @@
+{
+  "name": "formatter-cli",
+  "version": "1.0.0",
+  "description": "A Node.js CLI tool for formatting CSS, HTML, JavaScript, and JSON — extracted from the Chrome DevTools frontend formatter worker.",
+  "type": "module",
+  "bin": {
+    "formatter-cli": "./bin/formatter-cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "acorn": "^8.17.0",
+    "codemirror": "^5.65.21",
+    "commander": "^15.0.0",
+    "glob": "^13.0.6"
+  },
+  "devDependencies": {
+    "@types/acorn": "^4.0.6",
+    "@types/codemirror": "^5.60.17",
+    "@types/node": "^24.13.2",
+    "typescript": "^5.4.5"
+  },
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://source.chromium.org/chromium/chromium/src/+/main:third_party/devtools-frontend/src/front_end/entrypoints/formatter_worker/"
+  }
+}
