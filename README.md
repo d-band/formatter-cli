@@ -9,15 +9,27 @@ see in the DevTools **Sources** panel.
 
 ## Install
 
+Requires Node.js >= 16.
+
 ```sh
-cd formatter-cli
-npm install
-npm run build
-# optionally link it globally
-npm link
+# From npm (recommended)
+npm install -g formatter-cli
 ```
 
-After `npm link`, the `formatter-cli` command is available anywhere on your
+Then `formatter-cli` is on your `PATH`.
+
+### From source
+
+```sh
+git clone https://github.com/d-band/formatter-cli.git
+cd formatter-cli
+pnpm install
+pnpm build
+# optionally link it globally
+pnpm link --global
+```
+
+After linking, the `formatter-cli` command is available anywhere on your
 machine.
 
 ## Usage
@@ -90,8 +102,12 @@ formatter-cli/
 │       ├── JavaScriptFormatter.ts       # JavaScript (Acorn-based)
 │       ├── JSONFormatter.ts             # JSON
 │       └── FormatterWorker.ts           # `format(mime, text, indent)` entry
+├── test/                         # ported upstream test suite (node:test + tsx)
 ├── package.json
-└── tsconfig.json
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+├── tsconfig.json                 # type-checks src + test
+└── tsconfig.build.json           # build config → ./dist
 ```
 
 ### Dependencies
@@ -99,17 +115,17 @@ formatter-cli/
 - [`commander`](https://www.npmjs.com/package/commander) — CLI argument parsing
 - [`glob`](https://www.npmjs.com/package/glob) — file glob expansion for patterns
   like `src/**/*.js`
-- [`codemirror@^5.65.16`](https://www.npmjs.com/package/codemirror) — only the
+- [`codemirror@^5.65.21`](https://www.npmjs.com/package/codemirror) — only the
   CommonJS CSS / XML / JavaScript / HTML-mixed **mode packages** plus the
   editor-core UMD IIFE for the `CodeMirror` global holder (`getMode`,
   `startState`, `StringStream`, `defineMode`…). The DOM-dependent editor pieces
   are never loaded; a tiny DOM stub is installed via
   `register-codemirror.ts` so the UMD wrapper can execute in Node.
-- [`acorn@^8.11.3`](https://www.npmjs.com/package/acorn) — the JS/ES parser
+- [`acorn@^8.17.0`](https://www.npmjs.com/package/acorn) — the JS/ES parser
   consumed by `JavaScriptFormatter`.
 
-`@types/acorn`, `@types/codemirror`, `@types/node` are installed as
-devDependencies.
+`@types/acorn`, `@types/codemirror`, `@types/node`, `tsx` and `typescript` are
+installed as devDependencies.
 
 ### How it works — CodeMirror in Node
 
@@ -178,7 +194,13 @@ ported source files). The `codemirror` package is MIT.
 ## Development
 
 ```sh
-npm run dev          # watch mode (tsc -p tsconfig.json --watch)
-npm run build        # one-shot build to ./dist
+pnpm install
+pnpm test          # run the ported test suite (node:test via tsx)
+pnpm build         # one-shot build to ./dist
+pnpm dev           # watch mode
 node bin/formatter-cli.js --help
 ```
+
+Tests live in `test/` — the upstream `formatter_worker` cases migrated to
+`node:test` + `node:assert/strict`, run directly against the TypeScript source
+with `tsx`.
