@@ -1,6 +1,6 @@
 {
   "name": "formatter-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Node.js CLI tool for formatting CSS, HTML, JavaScript, and JSON — extracted from the Chrome DevTools frontend formatter worker.",
   "type": "module",
   "bin": {
