@@ -16,8 +16,9 @@
     "node": ">=16"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch",
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "test": "tsx --test \"test/*.test.ts\"",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "@types/acorn": "^4.0.6",
     "@types/codemirror": "^5.60.17",
     "@types/node": "^24.13.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.4.5"
   },
   "license": "BSD-3-Clause",

@@ -57,6 +57,7 @@ export type ChunkCallback = (arg0: Chunk) => void;
 export function createTokenizer(mimeType: string): (
     text: string,
     callback: (arg0: string, arg1: string | null, arg2: number, arg3: number) => Object | undefined | void,
+    startOffset?: number,
     ) => void {
   const mode = CodeMirror.getMode({indentUnit: 2}, mimeType);
   const state = CodeMirror.startState(mode);
@@ -71,6 +72,7 @@ export function createTokenizer(mimeType: string): (
   return (
       line: string,
       callback: (arg0: string, arg1: string | null, arg2: number, arg3: number) => void | Object | undefined,
+      startOffset = 0,
   ): void => {
     const stream = new CodeMirror.StringStream(line, 2, {
       lookAhead(_n: number): string | undefined {
@@ -80,6 +82,10 @@ export function createTokenizer(mimeType: string): (
         return null;
       },
     });
+    if (startOffset) {
+      stream.pos = startOffset;
+      stream.start = startOffset;
+    }
     while (!stream.eol()) {
       const style = mode.token(stream, state);
       const value = stream.current();
@@ -118,7 +124,8 @@ export function format(mimeType: string, text: string, indentString?: string): F
         formatter.format(text, lineEndings, 0, text.length);
         break;
       }
-      case FormattableMediaTypes.APPLICATION_JSON: {
+      case FormattableMediaTypes.APPLICATION_JSON:
+      case FormattableMediaTypes.APPLICATION_MANIFEST_JSON: {
         const formatter = new JSONFormatter(builder);
         formatter.format(text, lineEndings, 0, text.length);
         break;

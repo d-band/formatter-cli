@@ -78,12 +78,15 @@ export class JavaScriptFormatter {
       const format = this.#formatToken(node.parent, next);
       this.#push(next, format);
     }
+    // ${expressions} within a template literal need space enforced, while the
+    // literal text itself must be preserved verbatim (crbug.com/442209349).
+    if (node.parent?.type === 'TemplateLiteral' && node.type !== 'TemplateElement' && node.type !== 'TemplateLiteral') {
+      this.#builder.setEnforceSpaceBetweenWords(true);
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   #afterVisit(node: any): void {
-    // ${expressions} within a template literal need space enforced.
-    const restore = this.#builder.setEnforceSpaceBetweenWords(node.type !== 'TemplateElement');
     let token;
     while ((token = this.#tokenizer.peekToken()) && token.start < node.end) {
       const next = this.#tokenizer.nextToken() as TokenOrComment;
@@ -91,7 +94,11 @@ export class JavaScriptFormatter {
       this.#push(next, format);
     }
     this.#push(null, this.#finishNode(node));
-    this.#builder.setEnforceSpaceBetweenWords(restore || node.type === 'TemplateLiteral');
+    if (node.parent?.type === 'TemplateLiteral' && node.type !== 'TemplateElement' && node.type !== 'TemplateLiteral') {
+      this.#builder.setEnforceSpaceBetweenWords(false);
+    } else if (node.type === 'TemplateLiteral' && node.parent?.type !== 'TemplateLiteral') {
+      this.#builder.setEnforceSpaceBetweenWords(true);
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
